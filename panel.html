@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ABC — Seguimiento de Contenedores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* F11 = pantalla completa */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  font-family: 'Inter', system-ui, sans-serif;
+  overflow: hidden;
+  background: #F0F4FA;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════════════ LAYOUT: sidebar + content ═══════════════ */
+.layout { display: flex; height: 100vh; }
+
+/* ══════════ SIDEBAR ══════════ */
+.sidebar {
+  width: 290px; flex-shrink: 0;
+  background: #0C1F35;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+/* orange top stripe */
+.sb-stripe { height: 5px; background: #F47920; flex-shrink: 0; }
+
+/* BRAND */
+.sb-brand {
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+
+.sb-logo {
+  display: flex; align-items: center; gap: 13px;
+  margin-bottom: 0;
+}
+
+.sb-badge {
+  width: 50px; height: 50px;
+  background: #F47920; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 900; color: white; letter-spacing: 1px;
+  flex-shrink: 0;
+}
+
+.sb-co   { font-size: 22px; font-weight: 900; color: #fff; line-height: 1; }
+.sb-div  { font-size: 9px; color: rgba(255,255,255,0.3); letter-spacing: 3px; text-transform: uppercase; margin-top: 4px; }
+
+/* CLOCK */
+.sb-clock {
+  padding: 20px 24px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+
+#ck  { font-family: 'JetBrains Mono', monospace; font-size: 52px; font-weight: 700; color: #F47920; line-height: 1; letter-spacing: -2px; }
+#dt  { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 8px; text-transform: capitalize; line-height: 1.5; }
+
+/* TOTAL */
+.sb-total {
+  padding: 16px 24px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+
+.sb-total-n   { font-size: 44px; font-weight: 900; color: #fff; line-height: 1; }
+.sb-total-lbl { font-size: 9px; color: rgba(255,255,255,0.35); letter-spacing: 3px; text-transform: uppercase; margin-top: 4px; }
+
+/* STATUS LIST */
+.sb-statlist { flex: 1; padding: 14px 24px; overflow: hidden; }
+
+.sb-st {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.sb-st:last-child { border-bottom: none; }
+
+.sb-st-bar { width: 4px; height: 32px; border-radius: 2px; flex-shrink: 0; }
+.sb-st-n   { font-size: 26px; font-weight: 900; color: #fff; min-width: 38px; line-height: 1; }
+.sb-st-lbl { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+.sb-st-sub { font-size: 10px; color: rgba(255,255,255,0.28); margin-top: 1px; }
+
+/* FOOTER sidebar */
+.sb-foot {
+  padding: 12px 24px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; gap: 9px;
+  flex-shrink: 0;
+}
+
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: #22E890; animation: blink 1.4s infinite; flex-shrink: 0; }
+.live-lbl { font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+.lupd     { margin-left: auto; font-size: 10px; color: rgba(255,255,255,0.25); }
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.1} }
+
+/* ══════════ CONTENT ══════════ */
+.content {
+  flex: 1; display: flex; flex-direction: column;
+  background: #fff; overflow: hidden;
+  border-left: 1px solid #D5DDE8;
+}
+
+/* TOP BAR */
+.ct-head {
+  padding: 0 32px;
+  height: 54px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid #E2E8F0;
+  flex-shrink: 0;
+  background: #fff;
+}
+
+.ct-head-title {
+  font-size: 10px; font-weight: 800; letter-spacing: 4px;
+  text-transform: uppercase; color: #7A8FA0;
+}
+
+.ct-notif {
+  font-size: 12px; font-weight: 600; color: #9BAABA;
+  display: flex; align-items: center; gap: 8px;
+  transition: color 0.4s;
+}
+
+.ct-notif.live { color: #F47920; }
+
+/* orange accent line under top bar */
+.ct-accent { height: 3px; background: #F47920; flex-shrink: 0; }
+
+/* TABLE WRAPPER */
+.tbl-wrap {
+  flex: 1; overflow-y: auto;
+}
+
+.tbl-wrap::-webkit-scrollbar { width: 6px; }
+.tbl-wrap::-webkit-scrollbar-track { background: #F8FAFD; }
+.tbl-wrap::-webkit-scrollbar-thumb { background: #D5DDE8; border-radius: 3px; }
+
+/* TABLE */
+table {
+  width: 100%; border-collapse: collapse;
+}
+
+thead {
+  position: sticky; top: 0; z-index: 10;
+}
+
+thead tr { background: #F4F7FB; }
+
+thead th {
+  padding: 13px 14px 13px 0;
+  font-size: 9px; font-weight: 800; letter-spacing: 1.5px;
+  color: #7A8FA0; text-transform: uppercase; text-align: left;
+  border-bottom: 2px solid #D5DDE8;
+  white-space: nowrap;
+}
+
+thead th.first { padding-left: 32px; }
+thead th.right { text-align: right; padding-right: 32px; }
+thead th.status-col { width: 6px; padding: 0; }
+
+tbody tr {
+  border-bottom: 1px solid #EDF1F8;
+  transition: background 0.5s;
+}
+
+tbody tr.even { background: #fff; }
+tbody tr.odd  { background: #F8FAFD; }
+
+tbody tr.flash {
+  background: #FFF5EA !important;
+  outline: 1px solid rgba(244,121,32,0.2);
+  outline-offset: -1px;
+}
+
+tbody tr:hover { background: #EEF6FF !important; }
+
+tbody td {
+  padding: 13px 14px 13px 0;
+  vertical-align: middle;
+}
+
+tbody td.status-col { padding: 0; width: 6px; }
+tbody td.first      { padding-left: 32px; }
+tbody td.right      { text-align: right; padding-right: 32px; }
+
+/* cells */
+.c-doc  { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #9BAABA; }
+.c-cont { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: #18273A; }
+.c-tran { font-size: 12px; color: #7A8FA0; white-space: nowrap; }
+.c-eta  { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; transition: color 0.4s; }
+.c-date { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #9BAABA; }
+.c-dr   { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; }
+
+/* DÍAS pill */
+.dias-pill {
+  display: inline-block;
+  padding: 4px 12px; border-radius: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; font-weight: 700;
+}
+
+/* flash badge on ETA */
+.upd-tag {
+  display: inline-block; margin-left: 7px;
+  padding: 1px 7px; border-radius: 4px;
+  background: #F47920; color: white;
+  font-size: 8px; font-weight: 900; letter-spacing: 1px;
+  vertical-align: middle; text-transform: uppercase;
+  animation: blink 0.6s infinite;
+}
+
+/* FOOTER */
+.ct-foot {
+  padding: 10px 32px;
+  border-top: 1px solid #E2E8F0;
+  background: #F8FAFD;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.legend { display: flex; gap: 20px; flex-wrap: wrap; }
+.leg-it { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #7A8FA0; }
+.leg-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.leg-n   { font-weight: 700; color: #18273A; }
+
+.ct-foot-right { font-size: 11px; color: #9BAABA; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ══ SIDEBAR ══ -->
+  <div class="sidebar">
+    <div class="sb-stripe"></div>
+
+    <div class="sb-brand">
+      <div class="sb-logo">
+        <div class="sb-badge">ABC</div>
+        <div>
+          <div class="sb-co">ABC</div>
+          <div class="sb-div">Logística Global</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sb-clock">
+      <div id="ck">00:00:00</div>
+      <div id="dt"></div>
+    </div>
+
+    <div class="sb-total">
+      <div class="sb-total-n" id="total-n">—</div>
+      <div class="sb-total-lbl">Contenedores en seguimiento</div>
+    </div>
+
+    <div class="sb-statlist" id="sbstats"></div>
+
+    <div class="sb-foot">
+      <span class="live-dot"></span>
+      <span class="live-lbl">En vivo</span>
+      <span class="lupd" id="lupd"></span>
+    </div>
+  </div>
+
+  <!-- ══ CONTENT ══ -->
+  <div class="content">
+    <div class="ct-head">
+      <div class="ct-head-title">Seguimiento de Contenedores</div>
+      <div class="ct-notif" id="notif">ABC Logistics · Sistema de Control en Tiempo Real</div>
+    </div>
+    <div class="ct-accent"></div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="status-col"></th>
+            <th class="first">Documentos de Transporte</th>
+            <th>Contenedor</th>
+            <th>Transportadora</th>
+            <th>ETA</th>
+            <th>F. Dev. Estimada</th>
+            <th>F. Dev. Real</th>
+            <th class="right">Días</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="ct-foot">
+      <div class="legend" id="legend"></div>
+      <div class="ct-foot-right">Últ. actualización: <span id="lupd2">—</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   CONFIGURACIÓN
+   SIMULATE = true  → modo demo con actualizaciones automáticas
+   SIMULATE = false → descomentar fetchData() para API real
+
+   Integración con su bot:
+   window.updateETA('MSCU7234891-2', '2026-08-26')
+
+   JSON que debe devolver su API:
+   [{ "doc":"BL-001", "cont":"MSCU123", "trans":"MSC",
+      "eta":"2026-08-24", "devEst":"2026-08-31", "devReal":null }]
+══════════════════════════════════════════════════════════ */
+
+const SIMULATE = false;
+const REFRESH  = 15000;
+
+window.updateETA = (cont, eta) => {
+  const r = data.find(x => x.cont === cont);
+  if (!r) return;
+  r.eta = eta;
+  flash(r.id, '⚡ ETA ACTUALIZADA — ' + cont + '  →  ' + fmt(eta));
+};
+
+/* STATUS */
+const S = {
+  tr: { label:'En Tránsito', c:'#0B86E8', bg:'rgba(11,134,232,0.09)'  },
+  po: { label:'En Puerto',   c:'#7C4AF0', bg:'rgba(124,74,240,0.09)'  },
+  pr: { label:'Próximo',     c:'#C88000', bg:'rgba(200,128,0,0.09)'   },
+  rt: { label:'Retrasado',   c:'#D82020', bg:'rgba(216,32,32,0.09)'   },
+  dv: { label:'Devuelto',    c:'#009060', bg:'rgba(0,144,96,0.09)'    },
+};
+
+/* DATA */
+let data = [
+  { id:1,  doc:'MSC-2026-001847',  cont:'MSCU7234891-2',  trans:'MSC Mediterranean',    eta:'2026-08-24', devEst:'2026-08-31', devReal:null         },
+  { id:2,  doc:'MAEU-2026-003921', cont:'MSKU4521036-7',  trans:'Maersk Line',           eta:'2026-08-17', devEst:'2026-08-24', devReal:'2026-08-23' },
+  { id:3,  doc:'CMA-2026-007712',  cont:'CMAU8834521-0',  trans:'CMA CGM',               eta:'2026-08-18', devEst:'2026-08-25', devReal:null         },
+  { id:4,  doc:'EVG-2026-011234',  cont:'EISU3302198-4',  trans:'Evergreen Marine',      eta:'2026-08-09', devEst:'2026-08-16', devReal:null         },
+  { id:5,  doc:'HPL-2026-009876',  cont:'HLXU6721043-8',  trans:'Hapag-Lloyd',           eta:'2026-08-16', devEst:'2026-08-22', devReal:null         },
+  { id:6,  doc:'COL-2026-005544',  cont:'COSU1198734-5',  trans:'COSCO Shipping',        eta:'2026-09-02', devEst:'2026-09-09', devReal:null         },
+  { id:7,  doc:'YML-2026-004433',  cont:'YMLU9087234-1',  trans:'Yang Ming Marine',      eta:'2026-08-19', devEst:'2026-08-26', devReal:null         },
+  { id:8,  doc:'PIL-2026-002211',  cont:'PONU5534892-3',  trans:"Pacific Int'l Lines",   eta:'2026-08-10', devEst:'2026-08-21', devReal:null         },
+  { id:9,  doc:'ONE-2026-006677',  cont:'ONEY8123045-2',  trans:'Ocean Network Express', eta:'2026-08-12', devEst:'2026-08-19', devReal:'2026-08-18' },
+  { id:10, doc:'ZIM-2026-008891',  cont:'ZIMU4421093-6',  trans:'ZIM Integrated',        eta:'2026-08-20', devEst:'2026-08-27', devReal:null         },
+];
+
+async function fetchData() {
+  try {
+    console.log('[ABC] Pidiendo datos...');
+    const res = await fetch('panel_api.php?_=' + Date.now(), { cache: 'no-store' });
+    const nuevo = await res.json();
+    console.log('[ABC] Recibidos', nuevo.length, 'registros. Primero:', nuevo[0]);
+
+    // Comparar contra los datos actuales para detectar CUALES ETA
+    // cambiaron de verdad, y aplicarles el flash -- igual que hace
+    // simulate(), pero con datos reales.
+    const anteriorPorCont = new Map(data.map(r => [r.cont, r]));
+
+    nuevo.forEach((r, i) => {
+      r.id = i + 1; // id estable para el flash/tracking en esta corrida
+      const anterior = anteriorPorCont.get(r.cont);
+      if (anterior && anterior.eta !== r.eta) {
+        console.log('[ABC] CAMBIO DETECTADO en', r.cont, ':', anterior.eta, '->', r.eta);
+        flashSet.add(r.id);
+        setNotif('⚡ ETA ACTUALIZADA — ' + r.cont + '  →  ' + fmt(r.eta), true);
+        setTimeout(() => { flashSet.delete(r.id); renderTable(); }, 5500);
+      }
+    });
+
+    data = nuevo;
+    lastUpd = new Date();
+    console.log('[ABC] data actualizada, renderizando...');
+    renderAll();
+  } catch (e) {
+    console.error('[ABC] ERROR en fetchData:', e);
+  }
+}
+
+let flashSet = new Set(), lastUpd = null, nTimer = null;
+
+const daysTo = s => {
+  if (!s) return null;
+  const a = new Date(); a.setHours(0,0,0,0);
+  const b = new Date(s+'T00:00:00'); b.setHours(0,0,0,0);
+  return Math.round((b-a)/86400000);
+};
+
+const key = r => {
+  if (r.devReal) return 'dv';
+  const et = daysTo(r.eta);
+  if (et===null) return 'po';
+  if (et<0)  return 'rt';
+  if (et<=3) return 'pr';
+  return 'tr';
+};
+
+const fmt = s => {
+  if (!s) return '—';
+  return new Date(s+'T12:00:00')
+    .toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'})
+    .toUpperCase();
+};
+
+/* FLASH */
+function flash(id, msg) {
+  flashSet.add(id); lastUpd = new Date();
+  setNotif(msg, true); renderAll();
+  setTimeout(()=>{ flashSet.delete(id); renderTable(); }, 5500);
+}
+
+function setNotif(msg, live) {
+  const el = document.getElementById('notif');
+  el.textContent = msg; el.className = 'ct-notif' + (live?' live':'');
+  clearTimeout(nTimer);
+  if (live) nTimer = setTimeout(()=>{
+    el.textContent='ABC Logistics · Sistema de Control en Tiempo Real';
+    el.className='ct-notif';
+  }, 5000);
+}
+
+/* SIDEBAR */
+function renderSidebar() {
+  const cnt = {tr:0,po:0,pr:0,rt:0,dv:0};
+  data.forEach(r => cnt[key(r)]++);
+  document.getElementById('total-n').textContent = data.length;
+  document.getElementById('sbstats').innerHTML = Object.entries(S).map(([k,s])=>`
+    <div class="sb-st">
+      <div class="sb-st-bar" style="background:${s.c}"></div>
+      <div class="sb-st-n" style="color:${s.c}">${cnt[k]}</div>
+      <div>
+        <div class="sb-st-lbl" style="color:${s.c}">${s.label}</div>
+        <div class="sb-st-sub">${cnt[k]===1?'contenedor':'contenedores'}</div>
+      </div>
+    </div>`).join('');
+}
+
+/* TABLE */
+function renderTable() {
+  document.getElementById('tbody').innerHTML = data.map((r,i)=>{
+    const k  = key(r);
+    const s  = S[k];
+    const fl = flashSet.has(r.id);
+    const dv = daysTo(r.eta); // dias que faltan para que llegue (ETA)
+
+    /* DÍAS pill */
+    let dn='—', dc=s.c, dbg=s.bg;
+    if (dv!==null){
+      dn = dv===0 ? 'HOY' : dv+'d';
+      if (dv<=1)       { dc='#D82020'; dbg='rgba(216,32,32,0.09)'; }
+      else if (dv<=3)  { dc='#C88000'; dbg='rgba(200,128,0,0.09)'; }
+    }
+
+    const etaC = fl ? '#F47920' : '#18273A';
+    const drC  = r.devReal ? '#009060' : '#9BAABA';
+
+    return `
+      <tr class="${i%2?'odd':'even'}${fl?' flash':''}">
+        <td class="status-col" style="background:${s.c}"></td>
+        <td class="first"><span class="c-doc">${r.doc}</span></td>
+        <td><span class="c-cont">${r.cont}</span></td>
+        <td><span class="c-tran">${r.trans}</span></td>
+        <td>
+          <span class="c-eta" style="color:${etaC}">${fmt(r.eta)}</span>
+          ${fl?'<span class="upd-tag">ACTUALIZADO</span>':''}
+        </td>
+        <td><span class="c-date">${fmt(r.devEst)}</span></td>
+        <td><span class="c-dr" style="color:${drC}">${fmt(r.devReal)}</span></td>
+        <td class="right">
+          <span class="dias-pill" style="background:${dbg};color:${dc}">${dn}</span>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+/* LEGEND */
+function renderLegend() {
+  const cnt={tr:0,po:0,pr:0,rt:0,dv:0};
+  data.forEach(r=>cnt[key(r)]++);
+  document.getElementById('legend').innerHTML = Object.entries(S)
+    .filter(([k])=>cnt[k])
+    .map(([k,s])=>`<div class="leg-it">
+      <span class="leg-dot" style="background:${s.c}"></span>
+      ${s.label} <span class="leg-n">${cnt[k]}</span>
+    </div>`).join('');
+}
+
+function updateLupd() {
+  if (!lastUpd) return;
+  const t = lastUpd.toLocaleTimeString('es-ES');
+  document.getElementById('lupd').textContent  = t;
+  document.getElementById('lupd2').textContent = t;
+}
+
+function renderAll() {
+  renderSidebar(); renderTable(); renderLegend(); updateLupd();
+}
+
+/* CLOCK */
+function tick() {
+  const n = new Date();
+  document.getElementById('ck').textContent = n.toLocaleTimeString('es-ES');
+  document.getElementById('dt').textContent =
+    n.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+
+/* SIMULATE */
+function simulate() {
+  const active = data.filter(r=>!r.devReal);
+  if (!active.length) return;
+  const r = active[Math.floor(Math.random()*active.length)];
+  const d = new Date(r.eta+'T00:00:00');
+  d.setDate(d.getDate()+(Math.random()>.5?1:-1));
+  r.eta = d.toISOString().slice(0,10);
+  flash(r.id,'⚡ ETA ACTUALIZADA — '+r.cont+'  →  '+fmt(r.eta));
+}
+
+tick(); renderAll();
+setInterval(tick, 1000);
+if (SIMULATE) setInterval(simulate, 12000);
+else { fetchData(); setInterval(fetchData, REFRESH); }
+</script>
+</body>
+</html>
